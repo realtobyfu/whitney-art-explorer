@@ -7,6 +7,12 @@ struct CachedAsyncImage<Placeholder: View>: View {
     @State private var image: UIImage?
     @State private var isFailed = false
 
+    init(url: URL?, @ViewBuilder placeholder: @escaping () -> Placeholder) {
+        self.url = url
+        self.placeholder = placeholder
+        _image = State(initialValue: url.flatMap { ImageLoader.shared.cache[$0] })
+    }
+
     var body: some View {
         if url == nil {
             placeholder()

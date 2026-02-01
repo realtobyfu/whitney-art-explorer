@@ -8,6 +8,7 @@ struct ArtistListView: View {
     }
 
     var body: some View {
+        @Bindable var viewModel = viewModel
         NavigationStack {
             Group {
                 if viewModel.artists.isEmpty && viewModel.isLoading {
@@ -26,9 +27,6 @@ struct ArtistListView: View {
             }
             .navigationTitle("Whitney Artists")
             .searchable(text: $viewModel.searchText, prompt: "Search artists")
-            .onChange(of: viewModel.searchText) {
-                viewModel.searchArtists()
-            }
             .refreshable {
                 await viewModel.loadArtists()
             }

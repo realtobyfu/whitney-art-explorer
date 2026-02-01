@@ -6,7 +6,10 @@ import Testing
 struct MockWhitneyAPIClient: WhitneyAPIClientProtocol {
     var artists: [Artist] = []
     var artworks: [Artwork] = []
+    var exhibitions: [Exhibition] = []
     var hasNextPage: Bool = false
+    var hasNextExhibitionPage: Bool = false
+    var hasNextArtworkPage: Bool = false
     var shouldThrow: Bool = false
 
     func fetchArtists(page: Int, search: String?) async throws -> (artists: [Artist], hasNextPage: Bool) {
@@ -17,6 +20,16 @@ struct MockWhitneyAPIClient: WhitneyAPIClientProtocol {
     func fetchArtistArtworks(artistID: Int) async throws -> [Artwork] {
         if shouldThrow { throw MockError.networkError }
         return artworks
+    }
+
+    func fetchExhibitions(page: Int) async throws -> (exhibitions: [Exhibition], hasNextPage: Bool) {
+        if shouldThrow { throw MockError.networkError }
+        return (exhibitions, hasNextExhibitionPage)
+    }
+
+    func fetchArtworks(page: Int) async throws -> (artworks: [Artwork], hasNextPage: Bool) {
+        if shouldThrow { throw MockError.networkError }
+        return (artworks, hasNextArtworkPage)
     }
 }
 
@@ -87,7 +100,7 @@ extension Artwork {
 
 // MARK: - ArtistListViewModel Tests
 
-@Test func loadArtists_setsArtistsOnSuccess() async {
+@Test @MainActor func loadArtists_setsArtistsOnSuccess() async {
     let mock = MockWhitneyAPIClient(artists: [.sample], hasNextPage: false)
     let vm = ArtistListViewModel(apiClient: mock)
 
@@ -99,7 +112,7 @@ extension Artwork {
     #expect(vm.error == nil)
 }
 
-@Test func loadArtists_setsErrorOnFailure() async {
+@Test @MainActor func loadArtists_setsErrorOnFailure() async {
     let mock = MockWhitneyAPIClient(shouldThrow: true)
     let vm = ArtistListViewModel(apiClient: mock)
 
@@ -110,7 +123,7 @@ extension Artwork {
     #expect(vm.isLoading == false)
 }
 
-@Test func loadArtists_setsHasNextPage() async {
+@Test @MainActor func loadArtists_setsHasNextPage() async {
     let mock = MockWhitneyAPIClient(artists: [.sample], hasNextPage: true)
     let vm = ArtistListViewModel(apiClient: mock)
 
@@ -119,7 +132,7 @@ extension Artwork {
     #expect(vm.hasNextPage == true)
 }
 
-@Test func loadNextPage_appendsArtists() async {
+@Test @MainActor func loadNextPage_appendsArtists() async {
     let mock = MockWhitneyAPIClient(artists: [.sample], hasNextPage: true)
     let vm = ArtistListViewModel(apiClient: mock)
 
@@ -132,7 +145,7 @@ extension Artwork {
 
 // MARK: - ArtistDetailViewModel Tests
 
-@Test func loadArtworks_setsArtworksOnSuccess() async {
+@Test @MainActor func loadArtworks_setsArtworksOnSuccess() async {
     let mock = MockWhitneyAPIClient(artworks: [.sample])
     let vm = ArtistDetailViewModel(artist: .sample, apiClient: mock)
 
@@ -144,7 +157,7 @@ extension Artwork {
     #expect(vm.error == nil)
 }
 
-@Test func loadArtworks_setsErrorOnFailure() async {
+@Test @MainActor func loadArtworks_setsErrorOnFailure() async {
     let mock = MockWhitneyAPIClient(shouldThrow: true)
     let vm = ArtistDetailViewModel(artist: .sample, apiClient: mock)
 
@@ -169,4 +182,139 @@ extension Artwork {
         images: [], aiAltText: nil
     )
     #expect(artwork.imageURL == nil)
+}
+
+// MARK: - Exhibition Sample Data
+
+extension Exhibition {
+    static let sample = Exhibition(
+        id: 10,
+        title: "Test Exhibition",
+        startTime: "2024-01-15T00:00:00.000Z",
+        endTime: "2024-06-30T00:00:00.000Z",
+        dateOverride: nil,
+        url: "/exhibitions/test",
+        primaryText: "<p>A test exhibition description.</p>"
+    )
+
+    static let overrideDateExhibition = Exhibition(
+        id: 11,
+        title: "Override Date Exhibition",
+        startTime: nil,
+        endTime: nil,
+        dateOverride: "Ongoing",
+        url: nil,
+        primaryText: nil
+    )
+}
+
+// MARK: - Exhibition Model Tests
+
+@Test func exhibitionDateRange_usesOverrideWhenPresent() {
+    let exhibition = Exhibition.overrideDateExhibition
+    #expect(exhibition.dateRange == "Ongoing")
+}
+
+@Test func exhibitionDateRange_formatsStartAndEnd() {
+    let exhibition = Exhibition.sample
+    #expect(!exhibition.dateRange.isEmpty)
+    #expect(exhibition.dateRange.contains("–"))
+}
+
+@Test func exhibitionDateRange_emptyWhenNoData() {
+    let exhibition = Exhibition(
+        id: 12, title: "Empty", startTime: nil, endTime: nil,
+        dateOverride: nil, url: nil, primaryText: nil
+    )
+    #expect(exhibition.dateRange == "")
+}
+
+// MARK: - ExhibitionListViewModel Tests
+
+@Test @MainActor func loadExhibitions_setsExhibitionsOnSuccess() async {
+    let mock = MockWhitneyAPIClient(exhibitions: [.sample], hasNextExhibitionPage: false)
+    let vm = ExhibitionListViewModel(apiClient: mock)
+
+    await vm.loadExhibitions()
+
+    #expect(vm.exhibitions.count == 1)
+    #expect(vm.exhibitions.first?.title == "Test Exhibition")
+    #expect(vm.isLoading == false)
+    #expect(vm.error == nil)
+}
+
+@Test @MainActor func loadExhibitions_setsErrorOnFailure() async {
+    let mock = MockWhitneyAPIClient(shouldThrow: true)
+    let vm = ExhibitionListViewModel(apiClient: mock)
+
+    await vm.loadExhibitions()
+
+    #expect(vm.exhibitions.isEmpty)
+    #expect(vm.error != nil)
+    #expect(vm.isLoading == false)
+}
+
+@Test @MainActor func loadExhibitions_setsHasNextPage() async {
+    let mock = MockWhitneyAPIClient(exhibitions: [.sample], hasNextExhibitionPage: true)
+    let vm = ExhibitionListViewModel(apiClient: mock)
+
+    await vm.loadExhibitions()
+
+    #expect(vm.hasNextPage == true)
+}
+
+@Test @MainActor func loadExhibitionsNextPage_appendsExhibitions() async {
+    let mock = MockWhitneyAPIClient(exhibitions: [.sample], hasNextExhibitionPage: true)
+    let vm = ExhibitionListViewModel(apiClient: mock)
+
+    await vm.loadExhibitions()
+    #expect(vm.exhibitions.count == 1)
+
+    await vm.loadNextPage()
+    #expect(vm.exhibitions.count == 2)
+}
+
+// MARK: - ArtworkListViewModel Tests
+
+@Test @MainActor func artworkListVM_setsArtworksOnSuccess() async {
+    let mock = MockWhitneyAPIClient(artworks: [.sample], hasNextArtworkPage: false)
+    let vm = ArtworkListViewModel(apiClient: mock)
+
+    await vm.loadArtworks()
+
+    #expect(vm.artworks.count == 1)
+    #expect(vm.artworks.first?.title == "Test Artwork")
+    #expect(vm.isLoading == false)
+    #expect(vm.error == nil)
+}
+
+@Test @MainActor func artworkListVM_setsErrorOnFailure() async {
+    let mock = MockWhitneyAPIClient(shouldThrow: true)
+    let vm = ArtworkListViewModel(apiClient: mock)
+
+    await vm.loadArtworks()
+
+    #expect(vm.artworks.isEmpty)
+    #expect(vm.error != nil)
+    #expect(vm.isLoading == false)
+}
+
+@Test @MainActor func artworkListVM_setsHasNextPage() async {
+    let mock = MockWhitneyAPIClient(artworks: [.sample], hasNextArtworkPage: true)
+    let vm = ArtworkListViewModel(apiClient: mock)
+
+    await vm.loadArtworks()
+
+    #expect(vm.hasNextPage == true)
+}
+
+@Test @MainActor func artworkListVM_appendsArtworksOnNextPage() async {
+    let mock = MockWhitneyAPIClient(artworks: [.sample], hasNextArtworkPage: true)
+    let vm = ArtworkListViewModel(apiClient: mock)
+
+    await vm.loadArtworks()
+    #expect(vm.artworks.count == 1)
+
+    await vm.loadNextPage()
+    #expect(vm.artworks.count == 2)
 }

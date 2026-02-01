@@ -38,7 +38,8 @@ private extension Cache {
 actor ImageLoader {
     static let shared = ImageLoader()
 
-    private let cache = Cache<URL, UIImage>()
+    // NSCache is thread-safe; safe to read from outside the actor
+    nonisolated(unsafe) let cache = Cache<URL, UIImage>()
     private var inFlightTasks: [URL: Task<UIImage, Error>] = [:]
 
     func image(from url: URL) async throws -> UIImage {

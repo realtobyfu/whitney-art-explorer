@@ -2,28 +2,21 @@ import Foundation
 
 @Observable
 @MainActor
-final class ArtistListViewModel {
+final class ExhibitionListViewModel {
     private let apiClient: WhitneyAPIClientProtocol
 
-    private var allArtists: [Artist] = []
+    var exhibitions: [Exhibition] = []
     var isLoading = false
     var error: Error?
-    var searchText = ""
     var hasNextPage = false
     private var currentPage = 1
     private var loadedPages: Set<Int> = []
-
-    var artists: [Artist] {
-        guard !searchText.isEmpty else { return allArtists }
-        let query = searchText.lowercased()
-        return allArtists.filter { $0.displayName.lowercased().contains(query) }
-    }
 
     init(apiClient: WhitneyAPIClientProtocol) {
         self.apiClient = apiClient
     }
 
-    func loadArtists() async {
+    func loadExhibitions() async {
         currentPage = 1
         loadedPages = [1]
         isLoading = true
@@ -31,8 +24,8 @@ final class ArtistListViewModel {
         defer { isLoading = false }
 
         do {
-            let result = try await apiClient.fetchArtists(page: 1, search: nil)
-            allArtists = result.artists
+            let result = try await apiClient.fetchExhibitions(page: 1)
+            exhibitions = result.exhibitions
             hasNextPage = result.hasNextPage
         } catch {
             self.error = error
@@ -48,8 +41,8 @@ final class ArtistListViewModel {
         defer { isLoading = false }
 
         do {
-            let result = try await apiClient.fetchArtists(page: currentPage, search: nil)
-            allArtists.append(contentsOf: result.artists)
+            let result = try await apiClient.fetchExhibitions(page: currentPage)
+            exhibitions.append(contentsOf: result.exhibitions)
             hasNextPage = result.hasNextPage
         } catch {
             self.error = error

@@ -5,13 +5,24 @@ struct ArtworkCardView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
-            CachedAsyncImage(url: artwork.imageURL) {
-                placeholder
+            if artwork.imageURL != nil {
+                CachedAsyncImage(url: artwork.imageURL) {
+                    placeholder
+                }
+                .frame(maxWidth: .infinity, minHeight: 120)
+                .clipped()
+                .cornerRadius(8)
+                .padding(.bottom, 2)
+            } else {
+                HStack(spacing: 4) {
+                    Image(systemName: "photo")
+                        .font(.caption2)
+                    Text("No image")
+                        .font(.caption2)
+                }
+                .foregroundStyle(.tertiary)
+                .padding(.bottom, 2)
             }
-            .frame(maxWidth: .infinity, minHeight: 120)
-            .clipped()
-            .cornerRadius(8)
-            .padding(.bottom, 2)
 
             Text(artwork.title)
                 .font(.system(size: 14, weight: .bold))

@@ -16,6 +16,7 @@ final class ArtistDetailViewModel {
     }
 
     func loadArtworks() async {
+        guard artworks.isEmpty else { return }
         isLoadingArtworks = true
         error = nil
         defer { isLoadingArtworks = false }

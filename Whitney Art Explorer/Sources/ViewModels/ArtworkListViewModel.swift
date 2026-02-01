@@ -2,10 +2,10 @@ import Foundation
 
 @Observable
 @MainActor
-final class ArtistListViewModel {
+final class ArtworkListViewModel {
     private let apiClient: WhitneyAPIClientProtocol
 
-    private var allArtists: [Artist] = []
+    private var allArtworks: [Artwork] = []
     var isLoading = false
     var error: Error?
     var searchText = ""
@@ -13,17 +13,17 @@ final class ArtistListViewModel {
     private var currentPage = 1
     private var loadedPages: Set<Int> = []
 
-    var artists: [Artist] {
-        guard !searchText.isEmpty else { return allArtists }
+    var artworks: [Artwork] {
+        guard !searchText.isEmpty else { return allArtworks }
         let query = searchText.lowercased()
-        return allArtists.filter { $0.displayName.lowercased().contains(query) }
+        return allArtworks.filter { $0.title.lowercased().contains(query) }
     }
 
     init(apiClient: WhitneyAPIClientProtocol) {
         self.apiClient = apiClient
     }
 
-    func loadArtists() async {
+    func loadArtworks() async {
         currentPage = 1
         loadedPages = [1]
         isLoading = true
@@ -31,8 +31,8 @@ final class ArtistListViewModel {
         defer { isLoading = false }
 
         do {
-            let result = try await apiClient.fetchArtists(page: 1, search: nil)
-            allArtists = result.artists
+            let result = try await apiClient.fetchArtworks(page: 1)
+            allArtworks = result.artworks
             hasNextPage = result.hasNextPage
         } catch {
             self.error = error
@@ -48,8 +48,8 @@ final class ArtistListViewModel {
         defer { isLoading = false }
 
         do {
-            let result = try await apiClient.fetchArtists(page: currentPage, search: nil)
-            allArtists.append(contentsOf: result.artists)
+            let result = try await apiClient.fetchArtworks(page: currentPage)
+            allArtworks.append(contentsOf: result.artworks)
             hasNextPage = result.hasNextPage
         } catch {
             self.error = error

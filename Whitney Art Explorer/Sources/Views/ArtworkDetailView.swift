@@ -14,24 +14,25 @@ struct ArtworkDetailView: View {
         .navigationBarTitleDisplayMode(.inline)
     }
 
+    @ViewBuilder
     private var artworkImage: some View {
-        CachedAsyncImage(url: artwork.imageURL) {
-            imagePlaceholder
-        }
-        .frame(maxWidth: .infinity)
-        .frame(minHeight: 250)
-        .padding(.horizontal)
-    }
-
-    private var imagePlaceholder: some View {
-        Rectangle()
-            .fill(Color(.systemGray5))
-            .frame(height: 300)
-            .overlay {
-                Image(systemName: "photo")
-                    .font(.largeTitle)
-                    .foregroundStyle(.secondary)
+        if artwork.imageURL != nil {
+            CachedAsyncImage(url: artwork.imageURL) {
+                ProgressView()
+                    .frame(maxWidth: .infinity, minHeight: 250)
             }
+            .frame(maxWidth: .infinity)
+            .padding(.horizontal)
+        } else {
+            HStack(spacing: 4) {
+                Image(systemName: "photo")
+                    .font(.caption)
+                Text("No image available")
+                    .font(.caption)
+            }
+            .foregroundStyle(.tertiary)
+            .padding(.horizontal)
+        }
     }
 
     private var infoSection: some View {
