@@ -1,0 +1,30 @@
+# Tuist managed (regenerated, don't commit)
+*.xcodeproj
+*.xcworkspace
+Derived/
+
+# Xcode
+DerivedData/
+*.xcuserstate
+*.xcscmblueprint
+xcuserdata/
+
+# SPM
+.build/
+.swiftpm/
+
+# CocoaPods (if using)
+Pods/
+
+# macOS
+.DS_Store
+*.swp
+*~
+
+# Secrets (never commit)
+*.xcconfig
+!*.sample.xcconfig
+Secrets/
+
+# Tuist cache
+.tuist-bin/
